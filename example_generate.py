@@ -7,6 +7,7 @@ Date:   June 5th, 2023
 from lib import ShortFormReport
 import json
 import jwt
+import traceback
 
 # Construct the short form report object
 rep = ShortFormReport()
@@ -40,14 +41,14 @@ rep.add_issue( "Debug commands enable arbitrary memory read/write",
 
 # Print the short form report to console
 print( "The short-form report:" )
-print( json.dumps( rep.get_report(), indent=4 ) ) 
+print( rep.get_report_as_str() ) 
 
 # Sign the short-form report (as JWT) and print to console
 print( "\n\n" )
 print( "The corresponding signed JWT:" )
 with open( "testkey.pem","r" ) as f:
     privkey = f.read()
-    signed_report = rep.sign_report( privkey )
+    signed_report = rep.sign_report( privkey, algo="PS512" )
     print( signed_report )
 
 # Verify the signature
@@ -55,5 +56,15 @@ print( "\n\n" )
 print( "Verifying signature..." )
 with open( "testkey.pub", "r") as f:
     pubkey = f.read()
-    decoded = jwt.decode( signed_report, pubkey, algorithms=["RS512"] )
+
+try:
+    decoded = jwt.decode( signed_report, pubkey, algorithms=["PS512",] )
     print( "Success!" )
+    print( "\n\n" )
+    print( "Decoded report:" )
+    print( decoded )
+except Exception:
+    print( "Error!" )
+    traceback.print_exc()
+
+
