@@ -21,54 +21,43 @@ Date  : June 5th, 2023
 import json
 import jwt
 
-# TODO: In the next version of the Security Review Framework specification, we
-# may want to more strictly limit the types of values that certain fields can
-# hold. For example:
-#   1. The 'category' could be restricted to: storage, network, cpu, etc...
-#   2. The 'methodology' could be restricted to: whitebox, blackbox, etc...
 
-# TODO: We may also want to add other fields, such as:
-#   1. scope: to briefly specify the scope of the audit, secure boot, etc...
-
-
-
-# FIXME: Expand accepted list of hash algorithms
-FW_HASH_ALGOS = ("sha2_384",)
-
+# FIXME: Expand accepted list of signing algorithms
+ALLOWED_JWT_ALGORITHMS = ("PS512",)
 
 class ShortFormReport( object ):
     def __init__( self, framework_ver="0.2" ):
         self.report = {}
-        self.report["review_framework_version"] = f"{framework_ver}"
+        self.report["review_framework_version"] = f"{framework_ver}".strip()
+        self.signed_report = None
 
 
-    def add_device( self, vendor, product, category, fw_ver, hash_algo, fw_hash ):
+    def add_device( self, vendor, product, category, fw_ver, fw_hash_sha2_256, fw_hash_sha2_384, fw_hash_sha2_512 ):
         """Add metadata that describes the vendor's device that was tested.
         
         vendor:    The name of the vendor that manufactured the device.
         product:   The name of the device. Usually a model name or number.
         category:  The type of device that was audited. Usually a short string 
-                     such as: 'storage', 'network', or 'cpu'.
+                     such as: 'storage', 'network', 'gpu', 'cpu', 'apu', or 'bmc'.
         fw_ver:    The version of the firmware image that that is attested by
                      this report. In most cases this will be the firmware version
                      produced by the vendor after the security audit completes,
                      which contains fixes for all vulnerabilities found during
                      the audit.
-        hash_algo: The algorithm used to calculate the firmware hash. Must be
-                     one of those specified in `FW_HASH_ALGOS`.
-        fw_hash:   A hex-encoded string containing the hash of the firmware image.
+        fw_hash_sha3_256: A hex-encoded string containing the SHA2-256 hash of the firmware image.
+        fw_hash_sha3_384: A hex-encoded string containing the SHA2-384 hash of the firmware image.
+        fw_hash_sha3_512: A hex-encoded string containing the SHA2-512 hash of the firmware image.
         """
-        if hash_algo not in FW_HASH_ALGOS:
-            raise ValueError(f"fw_hash_algo '{hash_algo}' must be one of: {FW_HASH_ALGOS}")
-        
+      
         self.report["device"] = {}
         self.report["device"]["vendor"]       = f"{vendor}".strip()
         self.report["device"]["product"]      = f"{product}".strip()
         self.report["device"]["category"]     = f"{category}".strip()
         self.report["device"]["fw_version"]   = f"{fw_ver}".strip()
-        self.report["device"]["fw_hash_algo"] = f"{hash_algo}".strip()
-        self.report["device"]["fw_hash"]      = f"{fw_hash}".strip()
-
+        self.report["device"]["fw_hash_sha2_256"] = f"{fw_hash_sha2_256}".strip()
+        self.report["device"]["fw_hash_sha2_384"] = f"{fw_hash_sha2_384}".strip()
+        self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha2_512}".strip()
+        
 
     def add_audit( self, srp, methodology, date, report_ver, cvss_ver="3.1" ):
         """Add metadata that describes the scope of the security review.
@@ -121,29 +110,55 @@ class ShortFormReport( object ):
         self.report["audit"]["issues"].append( new_issue )
 
 
-    def get_report( self ):
-        """Print the short-form report as a Python dict, which can be converted to JSON.
+    ###########################################################################
+    ## APIs for getting and printing the JSON report
+    ###########################################################################
+    
+    def get_report_as_dict( self ):
+        """Returns the short-form report as a Python dict.
         """
         return self.report
-
+    
+    def get_report_as_str( self ):
+        """Return the short-form report as a formatted/indented string.
+        """
+        return json.dumps( self.get_report_as_dict(), indent=4 )
 
     def print_report( self ):
-        """Prints the short-form JSON report
+        """Pretty-prints the short-form report
         """
-        print( json.dumps( self.get_report(), indent=4 ) ) 
+        print( self.get_report_as_str() ) 
 
 
-    def sign_report( self, priv_key ):
-        """Sign the JSON object to make the JWT.
+    ###########################################################################
+    ## APIs for signing the report
+    ###########################################################################
+
+    # TODO: ecc384 or larger, w/ p-curves
+    # TODO: rsa3k or larger
+
+    def sign_report( self, priv_key, algo ):
+        """Sign the JSON object to make the JWT. Returns the JWT as a bytes object.
+        
+        priv_key: A string containing the private key.
+        algo:     The string that specifies the algorithm, matching those in the
+                    PyJWT documentation, here:
+                    https://pyjwt.readthedocs.io/en/latest/algorithms.html
         """
-        self.signed_report = jwt.encode( self.get_report(), key=priv_key, algorithm="RS512" )
+        if algo not in ALLOWED_JWT_ALGORITHMS:
+            raise ValueError( f"Algorithm '{algo}' not in: {ALLOWED_JWT_ALGORITHMS}" )
+        self.signed_report = jwt.encode( self.get_report_as_dict(), 
+                                         key=priv_key,
+                                         algorithm=algo )
         return self.signed_report
 
 
+
+
     def get_signed_report( self ):
-        """Print the signed short form report (a JWT).
+        """Returns the signed short form report (a JWT). May return a 'None' 
+        object if the report hasn't been signed yet.
         """
         return self.signed_report 
-
 
 
