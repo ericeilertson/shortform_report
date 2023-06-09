@@ -12,18 +12,37 @@ For example usage of this script, refer to the following.
       An example JSON report that could be created by this library.
   * example_generate.py: 
       Demonstrates how to generate the JSON and sign it, producing a JWT.
-  * example_verify.py:
-      Demonstrates how to verify the signature of the JWT.
 
 Author: Jeremy Boone, NCC Group
 Date  : June 5th, 2023
 """
+
 import json
 import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends   import default_backend
 
 
-# FIXME: Expand accepted list of signing algorithms
-ALLOWED_JWT_ALGORITHMS = ("PS512",)
+# Only the following JSON Web Algorithms (JWA) will be accepted by this script
+# for signing the short-form report.
+# Refer to https://www.rfc-editor.org/rfc/rfc7518 for more details. 
+ALLOWED_JWA_RSA_ALGOS = (
+    "PS384", # RSASSA-PSS using SHA-384 and MGF1 with SHA-384
+    "PS512", # RSASSA-PSS using SHA-512 and MGF1 with SHA-512
+)
+ALLOWED_JWA_ECDSA_ALGOS = (
+    "ES384", # ECDSA using P-384 and SHA-384
+    "ES512"  # ECDSA using P-521 and SHA-512
+)
+ALLOWED_JWA_ALGOS = ALLOWED_JWA_RSA_ALGOS + ALLOWED_JWA_ECDSA_ALGOS
+
+# Only the following RSA key sizes (in bits) will be accepted by this script for
+# signing a short-form report.
+ALLOWED_RSA_KEY_SIZES = (
+    3072, # RSA 384
+    4096  # RSA 512
+)
+
 
 class ShortFormReport( object ):
     def __init__( self, framework_ver="0.2" ):
@@ -32,7 +51,7 @@ class ShortFormReport( object ):
         self.signed_report = None
 
 
-    def add_device( self, vendor, product, category, fw_ver, fw_hash_sha2_256, fw_hash_sha2_384, fw_hash_sha2_512 ):
+    def add_device( self, vendor, product, category, fw_ver, fw_hash_sha384, fw_hash_sha512 ):
         """Add metadata that describes the vendor's device that was tested.
         
         vendor:    The name of the vendor that manufactured the device.
@@ -44,19 +63,17 @@ class ShortFormReport( object ):
                      produced by the vendor after the security audit completes,
                      which contains fixes for all vulnerabilities found during
                      the audit.
-        fw_hash_sha3_256: A hex-encoded string containing the SHA2-256 hash of the firmware image.
-        fw_hash_sha3_384: A hex-encoded string containing the SHA2-384 hash of the firmware image.
-        fw_hash_sha3_512: A hex-encoded string containing the SHA2-512 hash of the firmware image.
+        fw_hash_sha384: A hex-encoded string containing the SHA2-384 hash of 
+                        the firmware image.
+        fw_hash_sha512: ... ditto but using SHA2-512 ...
         """
-      
         self.report["device"] = {}
-        self.report["device"]["vendor"]       = f"{vendor}".strip()
-        self.report["device"]["product"]      = f"{product}".strip()
-        self.report["device"]["category"]     = f"{category}".strip()
-        self.report["device"]["fw_version"]   = f"{fw_ver}".strip()
-        self.report["device"]["fw_hash_sha2_256"] = f"{fw_hash_sha2_256}".strip()
-        self.report["device"]["fw_hash_sha2_384"] = f"{fw_hash_sha2_384}".strip()
-        self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha2_512}".strip()
+        self.report["device"]["vendor"]           = f"{vendor}".strip()
+        self.report["device"]["product"]          = f"{product}".strip()
+        self.report["device"]["category"]         = f"{category}".strip()
+        self.report["device"]["fw_version"]       = f"{fw_ver}".strip()
+        self.report["device"]["fw_hash_sha2_384"] = f"{fw_hash_sha384}".strip()
+        self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha512}".strip()
         
 
     def add_audit( self, srp, methodology, date, report_ver, cvss_ver="3.1" ):
@@ -134,25 +151,42 @@ class ShortFormReport( object ):
     ## APIs for signing the report
     ###########################################################################
 
-    # TODO: ecc384 or larger, w/ p-curves
-    # TODO: rsa3k or larger
+    # TODO: support ES384 ES384
 
-    def sign_report( self, priv_key, algo ):
-        """Sign the JSON object to make the JWT. Returns the JWT as a bytes object.
+    def sign_report( self, priv_key, algo, kid ):
+        """Sign the JSON object to make a JSON Web Signature. Returns the JWS as
+        a bytes object. Refer to https://www.rfc-editor.org/rfc/rfc7515 for 
+        additional details of the JWS specification.
         
         priv_key: A string containing the private key.
-        algo:     The string that specifies the algorithm, matching those in the
-                    PyJWT documentation, here:
-                    https://pyjwt.readthedocs.io/en/latest/algorithms.html
+        algo:     The string that specifies the JSON Web Algorithm (JWA), as
+                    specified in https://www.rfc-editor.org/rfc/rfc7518.
+        kid:      The key ID to be included in the JWS header. This field will
+                    be used to uniquely identify the key used to sign the short
+                    form report. In other words, it should be unique to the SRP.
+        
+        Returns True on success, and False on failure.
         """
-        if algo not in ALLOWED_JWT_ALGORITHMS:
-            raise ValueError( f"Algorithm '{algo}' not in: {ALLOWED_JWT_ALGORITHMS}" )
+        # Ensure the signing algorithm is in the allow list
+        if algo not in ALLOWED_JWA_ALGOS:
+            print( f"Algorithm '{algo}' not in: {ALLOWED_JWA_ALGOS}" )
+            return False
+
+        # Because the JWA algorithm (e.g., 'PS384') specifies the hash-size, and
+        # not the key-size, we must double check the key-size here. We don't want
+        # RSA keys smaller than 3072 bytes.
+        if algo in ALLOWED_JWA_RSA_ALGOS:
+            pem = serialization.load_pem_private_key( priv_key, None, backend=default_backend() )
+            if pem.key_size not in ALLOWED_RSA_KEY_SIZES:
+                print( f"RSA key is too small: f{pem.key_size}, must be one of: f{ALLOWED_RSA_KEY_SIZES}" )
+                return False
+
+        # Finally, we can sign the short-form report.
         self.signed_report = jwt.encode( self.get_report_as_dict(), 
                                          key=priv_key,
-                                         algorithm=algo )
-        return self.signed_report
-
-
+                                         algorithm=algo,
+                                         headers={"kid": f"{kid}"} )
+        return True
 
 
     def get_signed_report( self ):
@@ -160,5 +194,40 @@ class ShortFormReport( object ):
         object if the report hasn't been signed yet.
         """
         return self.signed_report 
+
+
+    ###########################################################################
+    ## APIs for verifying a signed report
+    ###########################################################################
+
+
+    def get_signed_report_kid( self, signed_report ):
+        """Read the unverified JWS header to extract the 'kid'. This will be used
+        to find the appropriate public key for verifying the report signature.
+        
+        Returns None if the 'kid' isn't present, otherwise return the 'kid' string.
+        """
+        header = jwt.get_unverified_header(signed_report)
+        kid = header.get("kid", None)
+        return kid
+
+    
+    def verify_signed_report( self, signed_report, pub_key ):
+        """Verify the signed report using the provided public key.
+        
+        signed_report: The signed report as a JWS object.
+        pub_key:       The public key used to verify the signed report, which 
+                         corresponds to the kid that was previously returned by
+                         the 'get_signed_report_kid' API.
+        """
+        try:
+            decoded = jwt.decode( signed_report, pub_key, algorithms=ALLOWED_JWA_ALGOS )
+            return decoded
+        except Exception as e:
+            raise
+
+
+
+
 
 

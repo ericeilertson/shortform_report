@@ -1,5 +1,6 @@
 """
-Sample code that demonstrates how to generate, sign and verify a short-form report.
+Sample code that demonstrates how to generate, sign and verify a short-form 
+report.
 
 Author: Jeremy Boone
 Date:   June 5th, 2023
@@ -8,17 +9,45 @@ from lib import ShortFormReport
 import json
 import jwt
 import traceback
+import sys
+
+
+# Hardcoding these is crude, but whatever, this is just an example script to
+# show how it might work in field. 
+MY_PRIV_KEY  = "../testkey_rsa3k.pem"
+MY_PUB_KEY   = "../testkey_rsa3k.pub"
+#MY_SIGN_ALGO = "PS512"
+MY_SIGN_ALGO = "PS384"
+MY_KID       = "Wile E Coyote"
+
+###############################################################################
+# Generate and sign the short-form report
+###############################################################################
 
 # Construct the short form report object
 rep = ShortFormReport()
 
 # Add vendor device information
-# XXX: Note to SRP: This is where you must calculate the hash of the firmware image.
-rep.add_device("ACME Inc", "Roadrunner Trap", "storage", "1.2.3", "sha2_384",
-               "0x922c72f8ae9bdad3919f501ab5894052926e53ded1c518da824f57500f8e41fda4d221341b84a753e16724840f2a9ba2")
+# XXX: Note to SRP: This is where you must calculate the hash of the firmware 
+# image that you tested.
+rep.add_device(
+    "ACME Inc",         # vendor name
+    "Roadrunner Trap",  # product name
+    "storage",          # device category
+    "1.2.3",            # firmware version
+    # fw_hash_sha384
+    "0xcd484defa77e8c3e4a8dd73926e32365ea0dbd01e4eff017f211d4629cfcd8e4890dd66ab1bded9be865cd1c849800d4",
+    # fw_hash_sha512
+    "0x84635baabc039a8c74aed163a8deceab8777fed32dc925a4a8dacfd478729a7b6ab1cb91d7d35b49e2bd007a80ae16f292be3ea2b9d9a88cb3cc8dff6a216988"
+)
 
 # Add audit information from Security Review Provider information
-rep.add_audit("NCC Group", "whitebox", "2023-06-25", "1.2")
+rep.add_audit(
+    "NCC Group",  # SRP name
+    "whitebox",   # Test methodology
+    "2023-06-25", # Test completion date
+    "1.2"         # Report version
+)
 
 # Add issue details.
 rep.add_issue("Memory corruption when reading record from SPI flash",
@@ -27,7 +56,8 @@ rep.add_issue("Memory corruption when reading record from SPI flash",
               "CWE-111",
               "Due to insufficient input validation in the firmware, a local"
               " attacker who tampers with a configuration structure in"
-              " SPI flash, can cause stack-based memory corruption.")
+              " SPI flash, can cause stack-based memory corruption."
+)
 
 # Example of issue that has an associated CVE
 rep.add_issue("Debug commands enable arbitrary memory read/write",
@@ -37,33 +67,62 @@ rep.add_issue("Debug commands enable arbitrary memory read/write",
               "The firmware exposes debug command handlers that enable host-side"
               " drivers to read and write arbitrary regions of the device's"
               " SRAM.",
-              cve="CVE-2023-22222")
+              cve="CVE-2023-22222"
+)
 
 # Print the short form report to console
 print( "The short-form report:" )
 print( rep.get_report_as_str() ) 
 
-# Sign the short-form report (as JWT) and print to console
+# Sign the short-form report (as a JWS) and print the signed report to the console
+# XXX: Note to SRPs: You must include a 'kid' header to uniquely identify your 
+#      signing key. 
 print("\n\n")
-print("The corresponding signed JWT:")
-with open("testkey.pem", "r") as f:
+with open(MY_PRIV_KEY, "rb") as f:
     privkey = f.read()
-    signed_report = rep.sign_report( privkey, algo="PS512" )
-    print( signed_report )
 
+success = rep.sign_report( privkey, MY_SIGN_ALGO, MY_KID )
+if not success:
+    print( "Error encountered while signing short-form report" )
+    sys.exit(1)
+
+print("The corresponding signopened JWS:")
+signed_report = rep.get_signed_report()
+print( signed_report )
+
+###############################################################################
 # Verify the signature
+###############################################################################
+
+# Step 1. Read the JWS header and ensure we have the correct key for the kid.
+print("\n\n")
+print("Checking the signed header:")
+kid = rep.get_signed_report_kid( signed_report )
+if kid is None:
+    print( "kid is not present in JWS header." )
+    sys.exit(1)
+
+# XXX: Note for consumers of the short-form report: This is where you must 
+# lookup the correct key that corresponds to the kid.
+if kid != MY_KID:
+    print( "Unknown kid in JWS header." )
+    sys.exit(1)
+else:
+    print( f"Found the correct kid='{kid}'" )
+
+# Step 2. Read the public key
 print("\n\n")
 print("Verifying signature...")
-with open("testkey.pub", "r") as f:
+with open(MY_PUB_KEY, "r") as f:
     pubkey = f.read()
 
 try:
-    decoded = jwt.decode( signed_report, pubkey, algorithms=["PS512",] )
+    decoded = rep.verify_signed_report( signed_report, pubkey )
     print( "Success!" )
     print( "\n\n" )
     print( "Decoded report:" )
     print( decoded )
 except Exception:
-    print( "Error!" )
+    print( "Error during JWS decoding:" )
     traceback.print_exc()
 
