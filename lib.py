@@ -43,6 +43,9 @@ ALLOWED_RSA_KEY_SIZES = (
     4096  # RSA 512
 )
 
+# TODO
+HEADER_TYPE = "OCP_SFR"
+
 
 class ShortFormReport( object ):
     def __init__( self, framework_ver="0.2" ):
@@ -185,7 +188,7 @@ class ShortFormReport( object ):
         self.signed_report = jwt.encode( self.get_report_as_dict(), 
                                          key=priv_key,
                                          algorithm=algo,
-                                         headers={"kid": f"{kid}"} )
+                                         headers={"kid": f"{kid}", "typ":HEADER_TYPE} )
         return True
 
 

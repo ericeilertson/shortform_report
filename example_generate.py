@@ -14,6 +14,11 @@ import sys
 
 # Hardcoding these is crude, but whatever, this is just an example script to
 # show how it might work in field. 
+#
+# To quickly get up and running, you can use these openssl commands to generate the keypair:
+#   $ openssl genrsa -out testkey_rsa3k.pem 3072
+#   $ openssl rsa -in testkey_rsa3k.pem -pubout -out testkey_rsa3k.pub
+
 MY_PRIV_KEY  = "../testkey_rsa3k.pem"
 MY_PUB_KEY   = "../testkey_rsa3k.pub"
 #MY_SIGN_ALGO = "PS512"
@@ -43,7 +48,7 @@ rep.add_device(
 
 # Add audit information from Security Review Provider information
 rep.add_audit(
-    "NCC Group",  # SRP name
+    "My Pentest Corporation",  # SRP name
     "whitebox",   # Test methodology
     "2023-06-25", # Test completion date
     "1.2"         # Report version
