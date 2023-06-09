@@ -21,7 +21,7 @@ The `example_generate.py` script demonstrates how to use the API exported by `li
 
 ### Report Generation (By Security Review Provider)
 
-The SRP should use `lib.py` to generate the short-form report, by integrating it with their internal report generation apparatus. The `lib.py` API is designed to be simple and flexible so as to now restrict how the SRP may choose to generate the report. It is designed to allow data to be easily imported from a variety of sources such as CSV files or REST APIs.
+The SRP should use `lib.py` to generate the short-form report, by integrating it with their internal report generation apparatus. The `lib.py` API is designed to be simple and flexible so as to not restrict how the SRP may choose to generate the report. It is designed to allow data to be easily imported from a variety of sources such as CSV files or REST APIs.
 
 Use of the API is straight forward:
 1. Call `add_device()` to add vendor and device-specific metadata to the report.
@@ -29,9 +29,9 @@ Use of the API is straight forward:
 3. Call `add_issue()` any number of times to add vulnerability details to the report.
 4. Call `sign_report()` to sign the JSON report.
 
-When signing the report, the SRP must use an asymmetric signing key per those allowed by the [Allowed Algorithms](#Allowed-Algorithms) section. This API does not attempt to solve the key management problem, and we encourage SRPs to protect the private key as appropriate.
+When signing the report, the SRP must use an asymmetric signing key per those specified in the [Allowed Algorithms](#Allowed-Algorithms) section. This API does not attempt to solve the key management problem, and we encourage SRPs to protect the private key as appropriate.
 
-The corresponding public key and [Key ID](#Header-Fields) will be shared with the OCP so that it may be published on the OCP website.
+The SRP's public key, [Key ID](#Header-Fields) and signed short-form report will be shared with the OCP so that they can be published on the OCP website.
 
 ### Report Consumption (By OCP Members)
 
@@ -39,9 +39,9 @@ OCP members, such as cloud service providers, will be the primary consumers of t
 
 1. The OCP member will extract the `kid` header field from the report, and use it to lookup the correct SRP public key.
 2. The OCP member will then use the public key to verify the report's signature.
-3. Once the report authenticity is proven, the firmware hash contained in the report can be safely extracted.
+3. Once the report authenticity is proven, the firmware hash contained in the report (e.g., `fw_hash_sha2_384`) can be safely extracted.
 4. This extracted hash can be compated to a locally-calculated hash of the vendor-provided firmware image. 
-5. If these hashes match, then the OCP member has now successfully verified that the firmware they wish to deploy has been subjected to a security audit.
+5. If these hashes match, then the OCP member has now successfully verified that the firmware they wish to deploy has undergone a security audit.
 
 
 # Format of the Short-Form Report
@@ -87,6 +87,8 @@ What follows is an example JSON payload for a hypothetical review review:
 }
 ```
 
+Sample reports can be found in `sample_report.json` and `sample_signed_report.jws`.
+
 ## Payload Fields
 
 These purpose of the various fields is explained below.
@@ -119,12 +121,13 @@ These purpose of the various fields is explained below.
 * `cwe`: The CWE identifier for the vulnerability, for example "CWE-123".
 * `description`: A one or two sentence description of the issue. All device vendor sensitive information should be redacted.
 * `cve`: This field is optional, as not all reported issues will be assigned a CVE number.
-                       
+
+This list may be empty if the SRP found no vulnerabilities during the course of the security review.                       
 
 ## Header Fields
 
 * `typ`: Use of this field [is optional](https://www.rfc-editor.org/rfc/rfc7515#section-4.1.1), but this script sets it to "`OCP_SFR`" to indicate this is an OCP **S**hort **F**orm **R**eport.
-* `alg`: The algorithm used to sign the report. See the [Allowed Algorithms](#Allowed-Algorithms) section.
+* `alg`: The algorithm used to sign the report. Refer to the [Allowed Algorithms](#Allowed-Algorithms) section for more information.
 * `kid`: The signed JWS object will make use of the [Key ID](https://www.rfc-editor.org/rfc/rfc7515#section-4.1.4) header parameter. This will be used by consumers of the short-form reports to ensure that they select the correct public key when verifying the signed report. The inclusion of this parameter is an acknowledgement that multiple Security Review Providers (SRPs) will be chosen by the OCP for performing Vendor Security Reviews, and each SRP will use its own unique signing key.
 
 
@@ -135,7 +138,7 @@ Certain limitations are placed on which algorithms are allowed to be used in thi
 
 ## Hashing of Firmware Images
 
-Firmware images will be hashed using multiple algorithms to offer greater flexibility for the consumers of the short-form reports. The allowed algorithms are:
+Firmware images will be hashed using multiple algorithms to offer greater flexibility for OCP Members who consume these short-form reports. The required algorithms are:
 
 * SHA2-384
 * SHA2-512
