@@ -87,7 +87,7 @@ What follows is an example JSON payload for a hypothetical review review:
 }
 ```
 
-Sample reports can be found in `sample_report.json` and `sample_signed_report.jws`.
+A sample JSON report and signed JWS can be found in this `samples/` folder in this repository.
 
 ## Payload Fields
 
@@ -98,6 +98,8 @@ These purpose of the various fields is explained below.
 
 ### `device` fields
 
+A collection of fields that describe the vendor, device, and firmware version that was audited.
+
 * `vendor`: The name of the vendor that manufactured the device or firmware being tested.
 * `product`: The name of the device. Usually a model name of number.
 * `category`: The type of device that was audited. Usually a short string such as: `storage`, `network`, `gpu`, `cpu`, `apu`, or `bmc`.
@@ -107,13 +109,17 @@ These purpose of the various fields is explained below.
 
 ### `audit` fields
 
-* `srp`: The name of the security review provider
-* `methodology`: The test methodology. Usually a short string like 'whitebox' or 'blackbox'.
+Several fields that describe the audit itself: who did it, when it occured, what test methodology was followed, and so on.
+
+* `srp`: The name of the security review provider.
+* `methodology`: The test methodology. Usually a short string like `whitebox` or `blackbox`.
 * `completion_date`: When the security audit completed, in the YYYY-MM-DD format.
 * `report_version`: Version of the report created by the SRP.
-* `cvss_version`: Version of CVSS used to calculate scores for each issue. At present, we recommend CVSS version "3.1"
+* `cvss_version`: Version of CVSS used to calculate scores for each issue. At present, we recommend CVSS version "3.1".
 
 ### `issues` list
+
+This list of vulnerabilities that were **not fixed** by the device vendor before the firmware image was shipped. This list may be empty if the SRP found no vulnerabilities during the course of the security review.                       
 
 * `title`: A brief summary of the issue. Usually taken directly from the SRP's audit report.
 * `cvss_score`: The CVSS base score, represented as a string, such as "7.1".
@@ -122,7 +128,6 @@ These purpose of the various fields is explained below.
 * `description`: A one or two sentence description of the issue. All device vendor sensitive information should be redacted.
 * `cve`: This field is optional, as not all reported issues will be assigned a CVE number.
 
-This list may be empty if the SRP found no vulnerabilities during the course of the security review.                       
 
 ## Header Fields
 
