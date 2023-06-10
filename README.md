@@ -39,8 +39,8 @@ OCP members, such as cloud service providers, will be the primary consumers of t
 
 1. The OCP member will extract the `kid` header field from the report, and use it to lookup the correct SRP public key.
 2. The OCP member will then use the public key to verify the report's signature.
-3. Once the report authenticity is proven, the firmware hash contained in the report (e.g., `fw_hash_sha2_384`) can be safely extracted.
-4. This extracted hash can be compated to a locally-calculated hash of the vendor-provided firmware image. 
+3. Once the report authenticity is proven, the firmware hash contained in the report (e.g., `fw_hash_sha2_384/512`) can be safely extracted.
+4. This extracted hash can be compared to a locally-calculated hash of the vendor-provided firmware image. 
 5. If these hashes match, then the OCP member has now successfully verified that the firmware they wish to deploy has undergone a security audit.
 
 
@@ -100,10 +100,10 @@ These purpose of the various fields is explained below.
 
 * `vendor`: The name of the vendor that manufactured the device or firmware being tested.
 * `product`: The name of the device. Usually a model name of number.
-* `category`: The type of device that was audited. Usually a short string such as: 'storage', 'network', 'gpu', 'cpu', 'apu', or 'bmc'
-* `fw_version`: The version of the firmware image that is attested by the signed short-form report. In most cases this will be the firmware version produced by the vendor after the security audit completes, which contains fixes for all vulnerabilities that were found during the audit.
+* `category`: The type of device that was audited. Usually a short string such as: `storage`, `network`, `gpu`, `cpu`, `apu`, or `bmc`.
+* `fw_version`: The version of the firmware image that is attested by the signed short-form report. In most cases this will be the firmware version compiled by the vendor after the security audit completes, which contains fixes for all vulnerabilities that were found during the audit.
 * `fw_hash_sha2_384`: A hex-encoded string containing the SHA2-384 hash of the firmware image.
-* `fw_hash_sha2_384`: ... ditto, but using SHA2-512.
+* `fw_hash_sha2_512`: ... ditto, but using SHA2-512.
 
 ### `audit` fields
 
@@ -111,7 +111,7 @@ These purpose of the various fields is explained below.
 * `methodology`: The test methodology. Usually a short string like 'whitebox' or 'blackbox'.
 * `completion_date`: When the security audit completed, in the YYYY-MM-DD format.
 * `report_version`: Version of the report created by the SRP.
-* `cvss_version`: Version of CVSS used to calculate scores for each issue. Recommend CVSS "3.1"
+* `cvss_version`: Version of CVSS used to calculate scores for each issue. At present, we recommend CVSS version "3.1"
 
 ### `issues` list
 
