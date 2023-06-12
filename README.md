@@ -14,7 +14,7 @@ pip install -r requirements.txt
 
 # The API
 
-The `example_generate.py` script demonstrates how to use the API exported by `lib.py`. This script illustrates the report generation, signing, and signature verification processes.
+The `example_gen_sign_verify.py` script demonstrates how to use the API exported by `lib.py`. This script illustrates the report generation, signing, and signature verification processes.
 
 
 ## Integration With Workflows
