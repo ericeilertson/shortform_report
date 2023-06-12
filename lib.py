@@ -43,8 +43,8 @@ ALLOWED_RSA_KEY_SIZES = (
     4096  # RSA 512
 )
 
-# TODO
-HEADER_TYPE = "OCP_SFR"
+# Short-form reports set the following value in the JWS header's "typ" field.
+JWS_HEADER_TYPE = "OCP_SFR"
 
 
 class ShortFormReport( object ):
@@ -184,11 +184,15 @@ class ShortFormReport( object ):
                 print( f"RSA key is too small: f{pem.key_size}, must be one of: f{ALLOWED_RSA_KEY_SIZES}" )
                 return False
 
+        # Set the JWS headers
+        jws_headers = { "kid": f"{kid}",
+                        "typ": JWS_HEADER_TYPE }
+
         # Finally, we can sign the short-form report.
         self.signed_report = jwt.encode( self.get_report_as_dict(), 
                                          key=priv_key,
                                          algorithm=algo,
-                                         headers={"kid": f"{kid}", "typ":HEADER_TYPE} )
+                                         headers=jws_headers )
         return True
 
 
