@@ -48,13 +48,13 @@ JWS_HEADER_TYPE = "OCP_SFR"
 
 
 class ShortFormReport( object ):
-    def __init__( self, framework_ver="0.2" ):
+    def __init__( self, framework_ver:str="0.2" ):
         self.report = {}
         self.report["review_framework_version"] = f"{framework_ver}".strip()
         self.signed_report = None
 
 
-    def add_device( self, vendor, product, category, fw_ver, fw_hash_sha384, fw_hash_sha512 ):
+    def add_device( self, vendor:str, product:str, category:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ):
         """Add metadata that describes the vendor's device that was tested.
         
         vendor:    The name of the vendor that manufactured the device.
@@ -67,7 +67,7 @@ class ShortFormReport( object ):
                      which contains fixes for all vulnerabilities found during
                      the audit.
         fw_hash_sha384: A hex-encoded string containing the SHA2-384 hash of 
-                        the firmware image.
+                        the firmware image. Prefixed with "0x".
         fw_hash_sha512: ... ditto but using SHA2-512 ...
         """
         self.report["device"] = {}
@@ -79,7 +79,7 @@ class ShortFormReport( object ):
         self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha512}".strip()
         
 
-    def add_audit( self, srp, methodology, date, report_ver, cvss_ver="3.1" ):
+    def add_audit( self, srp:str, methodology:str, date:str, report_ver:str, cvss_ver:str="3.1" ):
         """Add metadata that describes the scope of the security review.
         
         srp:             The name of the Security Review Provider.
@@ -99,7 +99,7 @@ class ShortFormReport( object ):
         self.report["audit"]["issues"]          = []
 
 
-    def add_issue( self, title, cvss_score, cvss_vec, cwe, description, cve=None ):
+    def add_issue( self, title:str, cvss_score:str, cvss_vec:str, cwe:str, description:str, cve=None ):
         """Add one issue to the list of issues. This list should only contain
         unfixed issues. That is, any vulnerabilities discovered during the
         audit that were fixed before the 'fw_version' (listed above) should not
@@ -156,7 +156,7 @@ class ShortFormReport( object ):
 
     # TODO: support ES384 ES384
 
-    def sign_report( self, priv_key, algo, kid ):
+    def sign_report( self, priv_key:bytes, algo:str, kid:str ):
         """Sign the JSON object to make a JSON Web Signature. Returns the JWS as
         a bytes object. Refer to https://www.rfc-editor.org/rfc/rfc7515 for 
         additional details of the JWS specification.
@@ -170,6 +170,7 @@ class ShortFormReport( object ):
         
         Returns True on success, and False on failure.
         """
+        #print(type(priv_key))
         # Ensure the signing algorithm is in the allow list
         if algo not in ALLOWED_JWA_ALGOS:
             print( f"Algorithm '{algo}' not in: {ALLOWED_JWA_ALGOS}" )
@@ -208,7 +209,7 @@ class ShortFormReport( object ):
     ###########################################################################
 
 
-    def get_signed_report_kid( self, signed_report ):
+    def get_signed_report_kid( self, signed_report:bytes ):
         """Read the unverified JWS header to extract the 'kid'. This will be used
         to find the appropriate public key for verifying the report signature.
         
@@ -219,7 +220,7 @@ class ShortFormReport( object ):
         return kid
 
     
-    def verify_signed_report( self, signed_report, pub_key ):
+    def verify_signed_report( self, signed_report:bytes, pub_key:bytes ):
         """Verify the signed report using the provided public key.
         
         signed_report: The signed report as a JWS object.
@@ -232,9 +233,4 @@ class ShortFormReport( object ):
             return decoded
         except Exception as e:
             raise
-
-
-
-
-
 
