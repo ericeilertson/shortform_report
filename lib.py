@@ -54,7 +54,7 @@ class ShortFormReport( object ):
         self.signed_report = None
 
 
-    def add_device( self, vendor:str, product:str, category:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ):
+    def add_device( self, vendor:str, product:str, category:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ) -> None:
         """Add metadata that describes the vendor's device that was tested.
         
         vendor:    The name of the vendor that manufactured the device.
@@ -79,7 +79,7 @@ class ShortFormReport( object ):
         self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha512}".strip()
         
 
-    def add_audit( self, srp:str, methodology:str, date:str, report_ver:str, cvss_ver:str="3.1" ):
+    def add_audit( self, srp:str, methodology:str, date:str, report_ver:str, cvss_ver:str="3.1" ) -> None:
         """Add metadata that describes the scope of the security review.
         
         srp:             The name of the Security Review Provider.
@@ -99,7 +99,7 @@ class ShortFormReport( object ):
         self.report["audit"]["issues"]          = []
 
 
-    def add_issue( self, title:str, cvss_score:str, cvss_vec:str, cwe:str, description:str, cve=None ):
+    def add_issue( self, title:str, cvss_score:str, cvss_vec:str, cwe:str, description:str, cve=None ) -> None:
         """Add one issue to the list of issues. This list should only contain
         unfixed issues. That is, any vulnerabilities discovered during the
         audit that were fixed before the 'fw_version' (listed above) should not
@@ -134,20 +134,20 @@ class ShortFormReport( object ):
     ## APIs for getting and printing the JSON report
     ###########################################################################
     
-    def get_report_as_dict( self ):
+    def get_report_as_dict( self ) -> dict:
         """Returns the short-form report as a Python dict.
         """
         return self.report
     
-    def get_report_as_str( self ):
+    def get_report_as_str( self ) -> str:
         """Return the short-form report as a formatted/indented string.
         """
         return json.dumps( self.get_report_as_dict(), indent=4 )
 
-    def print_report( self ):
+    def print_report( self ) -> None:
         """Pretty-prints the short-form report
         """
-        print( self.get_report_as_str() ) 
+        print( self.get_report_as_str() )
 
 
     ###########################################################################
@@ -156,12 +156,12 @@ class ShortFormReport( object ):
 
     # TODO: support ES384 ES384
 
-    def sign_report( self, priv_key:bytes, algo:str, kid:str ):
+    def sign_report( self, priv_key:bytes, algo:str, kid:str ) -> bool:
         """Sign the JSON object to make a JSON Web Signature. Returns the JWS as
         a bytes object. Refer to https://www.rfc-editor.org/rfc/rfc7515 for 
         additional details of the JWS specification.
         
-        priv_key: A string containing the private key.
+        priv_key: A bytes object containing the private key.
         algo:     The string that specifies the JSON Web Algorithm (JWA), as
                     specified in https://www.rfc-editor.org/rfc/rfc7518.
         kid:      The key ID to be included in the JWS header. This field will
@@ -170,7 +170,6 @@ class ShortFormReport( object ):
         
         Returns True on success, and False on failure.
         """
-        #print(type(priv_key))
         # Ensure the signing algorithm is in the allow list
         if algo not in ALLOWED_JWA_ALGOS:
             print( f"Algorithm '{algo}' not in: {ALLOWED_JWA_ALGOS}" )
@@ -184,6 +183,10 @@ class ShortFormReport( object ):
             if pem.key_size not in ALLOWED_RSA_KEY_SIZES:
                 print( f"RSA key is too small: f{pem.key_size}, must be one of: f{ALLOWED_RSA_KEY_SIZES}" )
                 return False
+        
+        # 
+        if algo in ALLOWED_JWA_ECDSA_ALGOS:
+            pass
 
         # Set the JWS headers
         jws_headers = { "kid": f"{kid}" }
@@ -212,24 +215,30 @@ class ShortFormReport( object ):
         """Read the unverified JWS header to extract the 'kid'. This will be used
         to find the appropriate public key for verifying the report signature.
         
+        signed_report: A bytes object containing the signed report as a JWS object.
+        
         Returns None if the 'kid' isn't present, otherwise return the 'kid' string.
         """
-        header = jwt.get_unverified_header(signed_report)
+        header = jwt.get_unverified_header( signed_report )
         kid = header.get("kid", None)
         return kid
 
     
-    def verify_signed_report( self, signed_report:bytes, pub_key:bytes ):
+    def verify_signed_report( self, signed_report:bytes, pub_key:bytes ) -> dict:
         """Verify the signed report using the provided public key.
         
-        signed_report: The signed report as a JWS object.
-        pub_key:       The public key used to verify the signed report, which 
-                         corresponds to the kid that was previously returned by
-                         the 'get_signed_report_kid' API.
+        signed_report: A bytes object containing the signed report as a JWS object.
+        pub_key:       A bytes object containing the public key used to verify the
+                         signed report, which corresponds to the 'kid' that was 
+                         previously returned by the 'get_signed_report_kid' API.
+
+        Returns a dictionary containing the decoded payload, that is, the JSON 
+        short-form report.
         """
-        try:
-            decoded = jwt.decode( signed_report, pub_key, algorithms=ALLOWED_JWA_ALGOS )
-            return decoded
-        except Exception as e:
-            raise
+        decoded = jwt.decode( signed_report, 
+                              pub_key,
+                              algorithms=ALLOWED_JWA_ALGOS )
+        return decoded
+
+
 
