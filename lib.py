@@ -154,8 +154,6 @@ class ShortFormReport( object ):
     ## APIs for signing the report
     ###########################################################################
 
-    # TODO: support ES384 ES384
-
     def sign_report( self, priv_key:bytes, algo:str, kid:str ) -> bool:
         """Sign the JSON object to make a JSON Web Signature. Returns the JWS as
         a bytes object. Refer to https://www.rfc-editor.org/rfc/rfc7515 for 
@@ -184,10 +182,6 @@ class ShortFormReport( object ):
                 print( f"RSA key is too small: f{pem.key_size}, must be one of: f{ALLOWED_RSA_KEY_SIZES}" )
                 return False
         
-        # 
-        if algo in ALLOWED_JWA_ECDSA_ALGOS:
-            pass
-
         # Set the JWS headers
         jws_headers = { "kid": f"{kid}" }
 
@@ -209,7 +203,6 @@ class ShortFormReport( object ):
     ###########################################################################
     ## APIs for verifying a signed report
     ###########################################################################
-
 
     def get_signed_report_kid( self, signed_report:bytes ):
         """Read the unverified JWS header to extract the 'kid'. This will be used
@@ -239,6 +232,5 @@ class ShortFormReport( object ):
                               pub_key,
                               algorithms=ALLOWED_JWA_ALGOS )
         return decoded
-
 
 
