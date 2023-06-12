@@ -23,7 +23,10 @@ MY_PRIV_KEY  = "../testkey_rsa3k.pem"
 MY_PUB_KEY   = "../testkey_rsa3k.pub"
 #MY_SIGN_ALGO = "PS512"
 MY_SIGN_ALGO = "PS384"
-MY_KID       = "Wile E Coyote"
+
+# XXX: Note to SRPs: You must include a 'kid' header to uniquely identify your 
+# signing key. 
+MY_KID = "Wile E Coyote"
 
 ###############################################################################
 # Generate and sign the short-form report
@@ -80,8 +83,6 @@ print( "The short-form report:" )
 print( rep.get_report_as_str() ) 
 
 # Sign the short-form report (as a JWS) and print the signed report to the console
-# XXX: Note to SRPs: You must include a 'kid' header to uniquely identify your 
-#      signing key. 
 print("\n\n")
 with open(MY_PRIV_KEY, "rb") as f:
     privkey = f.read()
@@ -91,7 +92,7 @@ if not success:
     print( "Error encountered while signing short-form report" )
     sys.exit(1)
 
-print("The corresponding signopened JWS:")
+print("The corresponding signed JWS:")
 signed_report = rep.get_signed_report()
 print( signed_report )
 
@@ -118,7 +119,7 @@ else:
 # Step 2. Read the public key
 print("\n\n")
 print("Verifying signature...")
-with open(MY_PUB_KEY, "r") as f:
+with open(MY_PUB_KEY, "rb") as f:
     pubkey = f.read()
 
 try:
