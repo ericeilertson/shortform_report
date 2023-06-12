@@ -19,9 +19,10 @@ Date  : June 5th, 2023
 
 import json
 import jwt
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends   import default_backend
-
+from cryptography.hazmat.primitives     import serialization
+from cryptography.hazmat.backends       import default_backend
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.asymmetric.ec  import EllipticCurvePrivateKey
 
 # Only the following JSON Web Algorithms (JWA) will be accepted by this script
 # for signing the short-form report.
@@ -173,14 +174,35 @@ class ShortFormReport( object ):
             print( f"Algorithm '{algo}' not in: {ALLOWED_JWA_ALGOS}" )
             return False
 
+        # Parse the private key to do some simple validation
+        pem = serialization.load_pem_private_key( priv_key, None, backend=default_backend() )
+
+        # Ensure the correct private key types are passed
+        if not isinstance(pem, (RSAPrivateKey, EllipticCurvePrivateKey)):
+            print( f"Expected 'priv_key' to be a 'RSAPrivateKey' or 'EllipticCurvePrivateKey'" )
+            return False
+
+        # Sanity check which curve is in use:
+        if algo in ALLOWED_JWA_ECDSA_ALGOS:
+            if pem.curve.name not in ("secp521r1", "secp384r1"):
+                print( f"Using disallowed curve: {pem.curve.name}" )
+                return False
+
         # Because the JWA algorithm (e.g., 'PS384') specifies the hash-size, and
         # not the key-size, we must double check the key-size here. We don't want
         # RSA keys smaller than 3072 bytes.
         if algo in ALLOWED_JWA_RSA_ALGOS:
-            pem = serialization.load_pem_private_key( priv_key, None, backend=default_backend() )
             if pem.key_size not in ALLOWED_RSA_KEY_SIZES:
-                print( f"RSA key is too small: f{pem.key_size}, must be one of: f{ALLOWED_RSA_KEY_SIZES}" )
+                print( f"RSA key is too small: {pem.key_size}, must be one of: {ALLOWED_RSA_KEY_SIZES}" )
                 return False
+        
+        # Ensure the provided private key corresponds with the specified algo parameter.
+        if ((algo == "PS384") and (pem.key_size != 3072)) or \
+           ((algo == "PS512") and (pem.key_size != 4096)) or \
+           ((algo == "ES384") and (pem.key_size !=  384)) or \
+           ((algo == "ES512") and (pem.key_size !=  521)):
+            print( f"Mismatch between algo={algo} and private key size: {pem.key_size}" )
+            return False
         
         # Set the JWS headers
         jws_headers = { "kid": f"{kid}" }

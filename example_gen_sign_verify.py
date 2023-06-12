@@ -17,8 +17,8 @@ import sys
 #   $ openssl genrsa -out testkey_rsa3k.pem 3072
 #   $ openssl rsa -in testkey_rsa3k.pem -pubout -out testkey_rsa3k.pub
 
-MY_PRIV_KEY  = "../testkey_ecdsa_p384.pem"
-MY_PUB_KEY   = "../testkey_ecdsa_p384.pub"
+MY_PRIV_KEY  = "../testkey_ecdsa_p521.pem"
+MY_PUB_KEY   = "../testkey_ecdsa_p521.pub"
 #MY_SIGN_ALGO = "PS512"
 MY_SIGN_ALGO = "ES512"
 
