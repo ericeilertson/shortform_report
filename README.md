@@ -104,7 +104,7 @@ A collection of fields that describe the vendor, device, and firmware version th
 * `product`: The name of the device. Usually a model name of number.
 * `category`: The type of device that was audited. Usually a short string such as: `storage`, `network`, `gpu`, `cpu`, `apu`, or `bmc`.
 * `fw_version`: The version of the firmware image that is attested by the signed short-form report. In most cases this will be the firmware version compiled by the vendor after the security audit completes, which contains fixes for all vulnerabilities that were found during the audit.
-* `fw_hash_sha2_384`: A hex-encoded string containing the SHA2-384 hash of the firmware image.
+* `fw_hash_sha2_384`: A hex-encoded string containing the SHA2-384 hash of the firmware image. Should be prefixed with "0x".
 * `fw_hash_sha2_512`: ... ditto, but using SHA2-512.
 
 ### `audit` fields
@@ -131,7 +131,6 @@ This list of vulnerabilities that were **not fixed** by the device vendor before
 
 ## Header Fields
 
-* `typ`: Use of this field [is optional](https://www.rfc-editor.org/rfc/rfc7515#section-4.1.1), but this script sets it to "`OCP_SFR`" to indicate this is an OCP **S**hort **F**orm **R**eport.
 * `alg`: The algorithm used to sign the report. Refer to the [Allowed Algorithms](#Allowed-Algorithms) section for more information.
 * `kid`: The signed JWS object will make use of the [Key ID](https://www.rfc-editor.org/rfc/rfc7515#section-4.1.4) header parameter. This will be used by consumers of the short-form reports to ensure that they select the correct public key when verifying the signed report. The inclusion of this parameter is an acknowledgement that multiple Security Review Providers (SRPs) will be chosen by the OCP for performing Vendor Security Reviews, and each SRP will use its own unique signing key.
 

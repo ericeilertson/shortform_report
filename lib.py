@@ -186,8 +186,7 @@ class ShortFormReport( object ):
                 return False
 
         # Set the JWS headers
-        jws_headers = { "kid": f"{kid}",
-                        "typ": JWS_HEADER_TYPE }
+        jws_headers = { "kid": f"{kid}" }
 
         # Finally, we can sign the short-form report.
         self.signed_report = jwt.encode( self.get_report_as_dict(), 
