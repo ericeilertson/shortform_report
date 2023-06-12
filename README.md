@@ -9,19 +9,18 @@ To install all dependencies, simply run:
 
 ```
 pip install -r requirements.txt
-
 ```
 
 # The API
 
-The `example_gen_sign_verify.py` script demonstrates how to use the API exported by `lib.py`. This script illustrates the report generation, signing, and signature verification processes.
+The `example_gen_sign_verify.py` script demonstrates how to use the API exported by `OcpReportLib.py`, covering all use cases from report generation, to signing, and also the signature verification process.
 
 
 ## Integration With Workflows
 
 ### Report Generation (By Security Review Provider)
 
-The SRP should use `lib.py` to generate the short-form report, by integrating it with their internal report generation apparatus. The `lib.py` API is designed to be simple and flexible so as to not restrict how the SRP may choose to generate the report. It is designed to allow data to be easily imported from a variety of sources such as CSV files or REST APIs.
+The Security Review Provider (SRP) should use `OcpReportLib.py` to generate the short-form report, by integrating it with their internal report generation apparatus. The `OcpReportLib.py` API is designed to be simple and flexible so as to not restrict how the SRP may choose to generate the report. It is designed to allow data to be easily imported from a variety of sources such as CSV files or REST APIs.
 
 Use of the API is straight forward:
 1. Call `add_device()` to add vendor and device-specific metadata to the report.
@@ -29,9 +28,9 @@ Use of the API is straight forward:
 3. Call `add_issue()` any number of times to add vulnerability details to the report.
 4. Call `sign_report()` to sign the JSON report.
 
-When signing the report, the SRP must use an asymmetric signing key per those specified in the [Allowed Algorithms](#Allowed-Algorithms) section. This API does not attempt to solve the key management problem, and we encourage SRPs to protect the private key as appropriate.
+When signing the report, the SRP must use an asymmetric signing key per those specified in the [Allowed Algorithms](#Allowed-Algorithms) section. This Python package does not attempt to solve the key management problem, and we encourage SRPs to protect the private key as appropriate.
 
-The SRP's public key, [Key ID](#Header-Fields) and signed short-form report will be shared with the OCP so that they can be published on the OCP website.
+The SRP's public key and [Key ID](#Header-Fields), as well as the signed short-form report, will be shared with the OCP so that they can be published on the OCP website.
 
 ### Report Consumption (By OCP Members)
 
@@ -93,38 +92,39 @@ A sample JSON report and signed JWS can be found in this `samples/` folder in th
 
 These purpose of the various fields is explained below.
 
-* `review_framework_version`: Intended to match the version of the OCP [Vendor Security Review framework](https://drive.google.com/file/d/177hRzP05xE5OlvW7nuBH35SxaBSo1TRI/view). Currently this is version "0.2".
+### `review_framework_version` field
 
+This field is intended to match the version of the OCP [Vendor Security Review framework](https://drive.google.com/file/d/177hRzP05xE5OlvW7nuBH35SxaBSo1TRI/view). Currently this is version "`0.2`".
 
 ### `device` fields
 
-A collection of fields that describe the vendor, device, and firmware version that was audited.
+A collection of fields that describe the vendor, device, and firmware version that was audited by a SRP.
 
 * `vendor`: The name of the vendor that manufactured the device or firmware being tested.
 * `product`: The name of the device. Usually a model name of number.
 * `category`: The type of device that was audited. Usually a short string such as: `storage`, `network`, `gpu`, `cpu`, `apu`, or `bmc`.
 * `fw_version`: The version of the firmware image that is attested by the signed short-form report. In most cases this will be the firmware version compiled by the vendor after the security audit completes, which contains fixes for all vulnerabilities that were found during the audit.
-* `fw_hash_sha2_384`: A hex-encoded string containing the SHA2-384 hash of the firmware image. Should be prefixed with "0x".
+* `fw_hash_sha2_384`: A hex-encoded string containing the SHA2-384 hash of the firmware image. Should be prefixed with "`0x`".
 * `fw_hash_sha2_512`: ... ditto, but using SHA2-512.
 
 ### `audit` fields
 
-Several fields that describe the audit itself: who did it, when it occured, what test methodology was followed, and so on.
+Several fields that describe the audit itself: Who delivered the audit, when the audit occured, what test methodology was followed, and so on.
 
-* `srp`: The name of the security review provider.
+* `srp`: The name of the Security Review Provider.
 * `methodology`: The test methodology. Usually a short string like `whitebox` or `blackbox`.
-* `completion_date`: When the security audit completed, in the YYYY-MM-DD format.
+* `completion_date`: When the security audit completed, in the `YYYY-MM-DD` format.
 * `report_version`: Version of the report created by the SRP.
-* `cvss_version`: Version of CVSS used to calculate scores for each issue. At present, we recommend CVSS version "3.1".
+* `cvss_version`: Version of CVSS used to calculate scores for each issue. At present, we recommend CVSS version "`3.1`".
 
 ### `issues` list
 
 This list of vulnerabilities that were **not fixed** by the device vendor before the firmware image was shipped. This list may be empty if the SRP found no vulnerabilities during the course of the security review.                       
 
 * `title`: A brief summary of the issue. Usually taken directly from the SRP's audit report.
-* `cvss_score`: The CVSS base score, represented as a string, such as "7.1".
+* `cvss_score`: The CVSS base score, represented as a string, such as "`7.1`".
 * `cvss_vector`: The CVSS base vector. Temporal and environmental metrics are not used or tracked.
-* `cwe`: The CWE identifier for the vulnerability, for example "CWE-123".
+* `cwe`: The CWE identifier for the vulnerability, for example "`CWE-123`".
 * `description`: A one or two sentence description of the issue. All device vendor sensitive information should be redacted.
 * `cve`: This field is optional, as not all reported issues will be assigned a CVE number.
 
@@ -132,8 +132,7 @@ This list of vulnerabilities that were **not fixed** by the device vendor before
 ## Header Fields
 
 * `alg`: The algorithm used to sign the report. Refer to the [Allowed Algorithms](#Allowed-Algorithms) section for more information.
-* `kid`: The signed JWS object will make use of the [Key ID](https://www.rfc-editor.org/rfc/rfc7515#section-4.1.4) header parameter. This will be used by consumers of the short-form reports to ensure that they select the correct public key when verifying the signed report. The inclusion of this parameter is an acknowledgement that multiple Security Review Providers (SRPs) will be chosen by the OCP for performing Vendor Security Reviews, and each SRP will use its own unique signing key.
-
+* `kid`: The signed JWS object will make use of the [Key ID](https://www.rfc-editor.org/rfc/rfc7515#section-4.1.4) header parameter. This will be used by consumers of the short-form reports to ensure that they select the correct public key when verifying the signed report. The inclusion of this parameter is an acknowledgement that multiple SRPs will be chosen by the OCP for performing Vendor Security Reviews, and each SRP will use its own unique signing key.
 
 
 # Allowed Algorithms
@@ -158,7 +157,7 @@ When signing a short-form report, only the following JSON Web Algorithms ([RFC-7
 
 Note above that the RSA-PSS algorithms "PS384" and "PS512" are named after the hash-size, not the key-size. Although the JWA specification encourages key sizes of [2048 bits or larger](https://www.rfc-editor.org/rfc/rfc7518#section-3.5), we take a stricter stance, and allow only the following key-sizes:
 
-* 3072 bits
-* 4096 bits
+* 3072 bits (384 bytes)
+* 4096 bits (512 bytes)
 
 

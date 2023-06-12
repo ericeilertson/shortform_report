@@ -5,9 +5,7 @@ report.
 Author: Jeremy Boone
 Date:   June 5th, 2023
 """
-from lib import ShortFormReport
-import json
-import jwt
+from OcpReportLib import ShortFormReport
 import traceback
 import sys
 
