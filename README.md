@@ -37,7 +37,7 @@ The SRP's public key and [Key ID](#Header-Fields), as well as the signed short-f
 OCP members, such as cloud service providers, will be the primary consumers of these reports. Whenever an OCP member obtains a new firmware image from a vendor, they will pull the corresponding short-form report to decide whether the firmware image is safe to deploy into production. 
 
 1. The OCP member will extract the `kid` header field from the report, and use it to lookup the correct SRP public key.
-2. The OCP member will then use the public key to verify the report's signature.
+2. The OCP member will then use the public key to verify the report's signature, using the `verify_signed_report()` API.
 3. Once the report authenticity is proven, the firmware hash contained in the report (e.g., `fw_hash_sha2_384/512`) can be safely extracted.
 4. This extracted hash can be compared to a locally-calculated hash of the vendor-provided firmware image. 
 5. If these hashes match, then the OCP member has now successfully verified that the firmware they wish to deploy has undergone a security audit.
