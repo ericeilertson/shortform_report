@@ -152,8 +152,8 @@ When signing a short-form report, only the following JSON Web Algorithms ([RFC-7
 
 * PS384 - RSASSA-PSS using SHA-384 and MGF1 with SHA-384
 * PS512 - RSASSA-PSS using SHA-512 and MGF1 with SHA-512
-* ES384 - ECDSA using P-384 and SHA-384 (secp521r1: NIST/SECG curve over a 521 bit prime field)
-* ES512 - ECDSA using P-521 and SHA-512 (secp384r1: NIST/SECG curve over a 384 bit prime field)
+* ES384 - ECDSA using P-384 and SHA-384 (secp384r1: NIST/SECG curve over a 384 bit prime field)
+* ES512 - ECDSA using P-521 and SHA-512 (secp521r1: NIST/SECG curve over a 521 bit prime field)
 
 Note above that the RSA-PSS algorithms "PS384" and "PS512" are named after the hash-size, not the key-size. Although the JWA specification encourages key sizes of [2048 bits or larger](https://www.rfc-editor.org/rfc/rfc7518#section-3.5), we take a stricter stance, and allow only the following key-sizes:
 
