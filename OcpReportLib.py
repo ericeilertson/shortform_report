@@ -1,17 +1,19 @@
 """
-A simple library for generating the short form JSON report. This script is 
-intended to be used by Security Review Providers who are participating in the
-Open Compute Project's Firmware Security Review Framework.
+A simple library for generating the short-form vendor security review report.
 
-The script complies with version 0.2 (draft) of the Security Review Framework.
+This script is intended to be used by Security Review Providers who are
+participating in the Open Compute Project's Firmware Security Review Framework.
+The script complies with version 0.2 (draft) of the Security Review Framework
+document.
 
-More details can be found here: https://www.opencompute.org/wiki/Security
+More details about the OCP review frameowkr can be found here:
+*  https://www.opencompute.org/wiki/Security
 
-For example usage of this script, refer to the following.
-  * sample_report.json
-      An example JSON report that could be created by this library.
+For example usage of this script, refer to the following:
   * example_generate.py: 
-      Demonstrates how to generate the JSON and sign it, producing a JWT.
+      Demonstrates how to generate, sign and verify the JSON report.
+  * sample_report.json
+      An example JSON report that was created by this script.
 
 Author: Jeremy Boone, NCC Group
 Date  : June 5th, 2023
@@ -19,14 +21,13 @@ Date  : June 5th, 2023
 
 import json
 import jwt
-from cryptography.hazmat.primitives     import serialization
-from cryptography.hazmat.backends       import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends   import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.ec  import EllipticCurvePrivateKey
 
 # Only the following JSON Web Algorithms (JWA) will be accepted by this script
-# for signing the short-form report.
-# Refer to https://www.rfc-editor.org/rfc/rfc7518 for more details. 
+# for signing the short-form report. Refer to RFC7518 for more details. 
 ALLOWED_JWA_RSA_ALGOS = (
     "PS384", # RSASSA-PSS using SHA-384 and MGF1 with SHA-384
     "PS512", # RSASSA-PSS using SHA-512 and MGF1 with SHA-512
@@ -44,9 +45,6 @@ ALLOWED_RSA_KEY_SIZES = (
     4096  # RSA 512
 )
 
-# Short-form reports set the following value in the JWS header's "typ" field.
-JWS_HEADER_TYPE = "OCP_SFR"
-
 
 class ShortFormReport( object ):
     def __init__( self, framework_ver:str="0.2" ):
@@ -57,13 +55,13 @@ class ShortFormReport( object ):
 
     def add_device( self, vendor:str, product:str, category:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ) -> None:
         """Add metadata that describes the vendor's device that was tested.
-        
+
         vendor:    The name of the vendor that manufactured the device.
         product:   The name of the device. Usually a model name or number.
         category:  The type of device that was audited. Usually a short string 
                      such as: 'storage', 'network', 'gpu', 'cpu', 'apu', or 'bmc'.
-        fw_ver:    The version of the firmware image that that is attested by
-                     this report. In most cases this will be the firmware version
+        fw_ver:    The version of the firmware image that is attested by this
+                     report. In most cases this will be the firmware version
                      produced by the vendor after the security audit completes,
                      which contains fixes for all vulnerabilities found during
                      the audit.
@@ -78,18 +76,19 @@ class ShortFormReport( object ):
         self.report["device"]["fw_version"]       = f"{fw_ver}".strip()
         self.report["device"]["fw_hash_sha2_384"] = f"{fw_hash_sha384}".strip()
         self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha512}".strip()
-        
+
 
     def add_audit( self, srp:str, methodology:str, date:str, report_ver:str, cvss_ver:str="3.1" ) -> None:
         """Add metadata that describes the scope of the security review.
-        
-        srp:             The name of the Security Review Provider.
-        methodology:     The test methodology. Currently a free-form text field.
-                           Usually a value like 'whitebox' or 'blackbox'.
-        completion_date: In the YYY-MM-DD format.
-        report_version:  Version of the report created by the SRP.
-        cvss_version:    Version of CVSS used to calculate scores for each issue.
-                           Defaults to CVSS v3.1.
+
+        srp:         The name of the Security Review Provider.
+        methodology: The test methodology. Currently a free-form text field.
+                       Usually a value like 'whitebox' or 'blackbox'.
+        date:        The date when the security audit completed. In the 
+                       YYYY-MM-DD format.
+        report_ver:  Version of the report created by the SRP.
+        cvss_ver:    Version of CVSS used to calculate scores for each issue.
+                       Defaults to "3.1".
         """
         self.report["audit"] = {}
         self.report["audit"]["srp"]             = f"{srp}".strip()
@@ -105,15 +104,15 @@ class ShortFormReport( object ):
         unfixed issues. That is, any vulnerabilities discovered during the
         audit that were fixed before the 'fw_version' (listed above) should not
         be included.
-        
+
         title:       A brief summary of the issue. Usually taken directly from 
                        the SRP's audit report.
         cvss_score:  The CVSS base score, represented as a string, such as "7.1".
         cvss_vec:    The CVSS base vector. Temporal and environmental metrics are
                        not used or tracked.
         cwe:         The CWE identifier for the vulnerability, for example "CWE-123".
-        description: A one or two sentence description of the issue. All device
-                       vendor sensitive information should be redacted.
+        description: A one or two sentence description of the issue. All vendor
+                       sensitive information should be redacted.
         cve:         This field is optional, as not all reported issues will be
                        assigned a CVE number.
         """
@@ -127,21 +126,21 @@ class ShortFormReport( object ):
 
         if cve is None: new_issue["cve"] = None
         else:           new_issue["cve"] = f"{cve}".strip()
-            
+
         self.report["audit"]["issues"].append( new_issue )
 
 
     ###########################################################################
     ## APIs for getting and printing the JSON report
     ###########################################################################
-    
+
     def get_report_as_dict( self ) -> dict:
         """Returns the short-form report as a Python dict.
         """
         return self.report
-    
+
     def get_report_as_str( self ) -> str:
-        """Return the short-form report as a formatted/indented string.
+        """Return the short-form report as a formatted and indented string.
         """
         return json.dumps( self.get_report_as_dict(), indent=4 )
 
@@ -156,17 +155,18 @@ class ShortFormReport( object ):
     ###########################################################################
 
     def sign_report( self, priv_key:bytes, algo:str, kid:str ) -> bool:
-        """Sign the JSON object to make a JSON Web Signature. Returns the JWS as
-        a bytes object. Refer to https://www.rfc-editor.org/rfc/rfc7515 for 
-        additional details of the JWS specification.
-        
+        """Sign the JSON object to make a JSON Web Signature. Refer to RFC7515
+        for additional details of the JWS specification.
+
+        The report can be signed using RSAPSS-384 or RSAPSS-512, or using ECDSA
+        with the NIST approved P-384 (secp384r1) or P-521 (secp521r1) curves.
+
         priv_key: A bytes object containing the private key.
-        algo:     The string that specifies the JSON Web Algorithm (JWA), as
-                    specified in https://www.rfc-editor.org/rfc/rfc7518.
-        kid:      The key ID to be included in the JWS header. This field will
-                    be used to uniquely identify the key used to sign the short
-                    form report. In other words, it should be unique to the SRP.
-        
+        algo:     The string that specifies the RFC7518 JSON Web Algorithm (JWA).
+        kid:      The Key ID to be included in the JWS header. This field will
+                    be used to uniquely identify the unique SRP key that was used
+                    to sign the report.
+
         Returns True on success, and False on failure.
         """
         # Ensure the signing algorithm is in the allow list
@@ -195,7 +195,7 @@ class ShortFormReport( object ):
             if pem.key_size not in ALLOWED_RSA_KEY_SIZES:
                 print( f"RSA key is too small: {pem.key_size}, must be one of: {ALLOWED_RSA_KEY_SIZES}" )
                 return False
-        
+
         # Ensure the provided private key corresponds with the specified algo parameter.
         if ((algo == "PS384") and (pem.key_size != 3072)) or \
            ((algo == "PS512") and (pem.key_size != 4096)) or \
@@ -215,9 +215,9 @@ class ShortFormReport( object ):
         return True
 
 
-    def get_signed_report( self ):
-        """Returns the signed short form report (a JWT). May return a 'None' 
-        object if the report hasn't been signed yet.
+    def get_signed_report( self ) -> bytes:
+        """Returns the signed short form report (a JWS) as a bytes object. May
+        return a 'None' object if the report hasn't been signed yet.
         """
         return self.signed_report 
 
@@ -226,29 +226,31 @@ class ShortFormReport( object ):
     ## APIs for verifying a signed report
     ###########################################################################
 
-    def get_signed_report_kid( self, signed_report:bytes ):
-        """Read the unverified JWS header to extract the 'kid'. This will be used
-        to find the appropriate public key for verifying the report signature.
-        
-        signed_report: A bytes object containing the signed report as a JWS object.
-        
+    def get_signed_report_kid( self, signed_report:bytes ) -> str:
+        """Read the unverified JWS header to extract the Key ID. This will be
+        used to find the appropriate public key for verifying the report 
+        signature.
+
+        signed_report: A bytes object containing the signed report as a JWS 
+                         object.
+
         Returns None if the 'kid' isn't present, otherwise return the 'kid' string.
         """
         header = jwt.get_unverified_header( signed_report )
         kid = header.get("kid", None)
         return kid
 
-    
+
     def verify_signed_report( self, signed_report:bytes, pub_key:bytes ) -> dict:
         """Verify the signed report using the provided public key.
-        
-        signed_report: A bytes object containing the signed report as a JWS object.
-        pub_key:       A bytes object containing the public key used to verify the
-                         signed report, which corresponds to the 'kid' that was 
-                         previously returned by the 'get_signed_report_kid' API.
 
-        Returns a dictionary containing the decoded payload, that is, the JSON 
-        short-form report.
+        signed_report: A bytes object containing the signed report as a JWS 
+                         object.
+        pub_key:       A bytes object containing the public key used to verify
+                         the signed report, which corresponds to the SRP's 'kid'.
+
+        Returns a dictionary containing the decoded JSON short-form report 
+        payload.
         """
         decoded = jwt.decode( signed_report, 
                               pub_key,
