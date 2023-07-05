@@ -45,7 +45,7 @@ OCP members, such as cloud service providers, will be the primary consumers of t
 
 # Format of the Short-Form Report
 
-What follows is an example JSON payload for a hypothetical review review:
+What follows is an example JSON payload for a hypothetical review:
 
 ```
 {
@@ -79,7 +79,7 @@ What follows is an example JSON payload for a hypothetical review review:
                 "cvss_vector": "AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L",
                 "cwe": "CWE-222",
                 "description": "The firmware exposes debug command handlers that enable host-side drivers to read and write arbitrary regions of the device's SRAM.",
-                "cve": "CVE-2023-22222"
+                "cve": "CVE-2014-10000"
             }
         ]
     }
@@ -90,7 +90,7 @@ A sample JSON report and signed JWS can be found in this `samples/` folder in th
 
 ## Payload Fields
 
-These purpose of the various fields is explained below.
+The purpose of the various fields is explained below.
 
 ### `review_framework_version` field
 
