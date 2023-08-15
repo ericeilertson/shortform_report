@@ -60,6 +60,9 @@ class ShortFormReport( object ):
         product:   The name of the device. Usually a model name or number.
         category:  The type of device that was audited. Usually a short string 
                      such as: 'storage', 'network', 'gpu', 'cpu', 'apu', or 'bmc'.
+        repo_tag:  The Git repository tag associated with the audit. Useful when
+                     evaluating ROMs for which we cannot easily calculate or 
+                     verify the hash.
         fw_ver:    The version of the firmware image that is attested by this
                      report. In most cases this will be the firmware version
                      produced by the vendor after the security audit completes,
