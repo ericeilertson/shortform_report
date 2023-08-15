@@ -40,6 +40,7 @@ rep.add_device(
     "ACME Inc",         # vendor name
     "Roadrunner Trap",  # product name
     "storage",          # device category
+    "release_v1_2_3",   # repo tag
     "1.2.3",            # firmware version
     # fw_hash_sha384
     "0xcd484defa77e8c3e4a8dd73926e32365ea0dbd01e4eff017f211d4629cfcd8e4890dd66ab1bded9be865cd1c849800d4",
@@ -73,7 +74,7 @@ rep.add_issue("Debug commands enable arbitrary memory read/write",
               "The firmware exposes debug command handlers that enable host-side"
               " drivers to read and write arbitrary regions of the device's"
               " SRAM.",
-              cve="CVE-2023-22222"
+              cve="CVE-2014-10000"
 )
 
 # Print the short form report to console

@@ -53,7 +53,7 @@ class ShortFormReport( object ):
         self.signed_report = None
 
 
-    def add_device( self, vendor:str, product:str, category:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ) -> None:
+    def add_device( self, vendor:str, product:str, category:str, repo_tag:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ) -> None:
         """Add metadata that describes the vendor's device that was tested.
 
         vendor:    The name of the vendor that manufactured the device.
@@ -73,6 +73,7 @@ class ShortFormReport( object ):
         self.report["device"]["vendor"]           = f"{vendor}".strip()
         self.report["device"]["product"]          = f"{product}".strip()
         self.report["device"]["category"]         = f"{category}".strip()
+        self.report["device"]["repo_tag"]         = f"{repo_tag}".strip()
         self.report["device"]["fw_version"]       = f"{fw_ver}".strip()
         self.report["device"]["fw_hash_sha2_384"] = f"{fw_hash_sha384}".strip()
         self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha512}".strip()

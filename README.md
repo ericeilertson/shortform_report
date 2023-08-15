@@ -54,6 +54,7 @@ What follows is an example JSON payload for a hypothetical review:
         "vendor": "ACME Inc",
         "product": "Roadrunner Trap",
         "category": "storage",
+        "repo_tag": "release_v1_2_3",
         "fw_version": "1.2.3",
         "fw_hash_sha2_384": "0xcd484defa77e8c3e4a8dd73926e32365ea0dbd01e4eff017f211d4629cfcd8e4890dd66ab1bded9be865cd1c849800d4",
         "fw_hash_sha2_512": "0x84635baabc039a8c74aed163a8deceab8777fed32dc925a4a8dacfd478729a7b6ab1cb91d7d35b49e2bd007a80ae16f292be3ea2b9d9a88cb3cc8dff6a216988"
@@ -103,6 +104,7 @@ A collection of fields that describe the vendor, device, and firmware version th
 * `vendor`: The name of the vendor that manufactured the device or firmware being tested.
 * `product`: The name of the device. Usually a model name of number.
 * `category`: The type of device that was audited. Usually a short string such as: `storage`, `network`, `gpu`, `cpu`, `apu`, or `bmc`.
+* `repo_tag`: If applicable, the report can include the repository tag for the code that was audited. This may also be useful for ROM audits where the OCP Member is unable to verify the firmware hash.
 * `fw_version`: The version of the firmware image that is attested by the signed short-form report. In most cases this will be the firmware version compiled by the vendor after the security audit completes, which contains fixes for all vulnerabilities that were found during the audit.
 * `fw_hash_sha2_384`: A hex-encoded string containing the SHA2-384 hash of the firmware image. Should be prefixed with "`0x`".
 * `fw_hash_sha2_512`: ... ditto, but using SHA2-512.
