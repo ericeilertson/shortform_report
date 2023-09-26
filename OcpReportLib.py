@@ -3,10 +3,10 @@ A simple library for generating the short-form vendor security review report.
 
 This script is intended to be used by Security Review Providers who are
 participating in the Open Compute Project's Firmware Security Review Framework.
-The script complies with version 0.2 (draft) of the Security Review Framework
+The script complies with version 0.3 (draft) of the Security Review Framework
 document.
 
-More details about the OCP review frameowkr can be found here:
+More details about the OCP review framework can be found here:
 *  https://www.opencompute.org/wiki/Security
 
 For example usage of this script, refer to the following:
@@ -47,7 +47,7 @@ ALLOWED_RSA_KEY_SIZES = (
 
 
 class ShortFormReport( object ):
-    def __init__( self, framework_ver:str="0.2" ):
+    def __init__( self, framework_ver:str="0.3" ):
         self.report = {}
         self.report["review_framework_version"] = f"{framework_ver}".strip()
         self.signed_report = None
