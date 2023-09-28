@@ -16,9 +16,11 @@ import sys
 # To quickly get up and running, you can use these openssl commands to generate the keypair:
 #   $ openssl genrsa -out testkey_rsa3k.pem 3072
 #   $ openssl rsa -in testkey_rsa3k.pem -pubout -out testkey_rsa3k.pub
+#   $ openssl ecparam -name secp521r1 -genkey -noout -out testkey_p521.pem
+#   $ openssl ec -in testkey_p521.pem -pubout -out testkey_ecdsa_p521.pub
 
-MY_PRIV_KEY  = "../testkey_ecdsa_p521.pem"
-MY_PUB_KEY   = "../testkey_ecdsa_p521.pub"
+MY_PRIV_KEY  = "testkey_p521.pem"
+MY_PUB_KEY   = "testkey_ecdsa_p521.pub"
 #MY_SIGN_ALGO = "PS512"
 MY_SIGN_ALGO = "ES512"
 
@@ -53,8 +55,9 @@ rep.add_audit(
     "My Pentest Corporation",  # SRP name
     "whitebox",   # Test methodology
     "2023-06-25", # Test completion date
-    "1.2"         # Report version
-)
+    "1.2",         # Report version
+    1,            # The OCP SAFE scope level
+    )
 
 # Add issue details.
 rep.add_issue("Memory corruption when reading record from SPI flash",

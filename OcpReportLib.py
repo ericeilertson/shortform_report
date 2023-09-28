@@ -22,18 +22,18 @@ Date  : June 5th, 2023
 import json
 import jwt
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends   import default_backend
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-from cryptography.hazmat.primitives.asymmetric.ec  import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 # Only the following JSON Web Algorithms (JWA) will be accepted by this script
 # for signing the short-form report. Refer to RFC7518 for more details. 
 ALLOWED_JWA_RSA_ALGOS = (
-    "PS384", # RSASSA-PSS using SHA-384 and MGF1 with SHA-384
-    "PS512", # RSASSA-PSS using SHA-512 and MGF1 with SHA-512
+    "PS384",  # RSASSA-PSS using SHA-384 and MGF1 with SHA-384
+    "PS512",  # RSASSA-PSS using SHA-512 and MGF1 with SHA-512
 )
 ALLOWED_JWA_ECDSA_ALGOS = (
-    "ES384", # ECDSA using P-384 and SHA-384
+    "ES384",  # ECDSA using P-384 and SHA-384
     "ES512"  # ECDSA using P-521 and SHA-512
 )
 ALLOWED_JWA_ALGOS = ALLOWED_JWA_RSA_ALGOS + ALLOWED_JWA_ECDSA_ALGOS
@@ -41,19 +41,19 @@ ALLOWED_JWA_ALGOS = ALLOWED_JWA_RSA_ALGOS + ALLOWED_JWA_ECDSA_ALGOS
 # Only the following RSA key sizes (in bits) will be accepted by this script for
 # signing a short-form report.
 ALLOWED_RSA_KEY_SIZES = (
-    3072, # RSA 384
+    3072,  # RSA 384
     4096  # RSA 512
 )
 
 
-class ShortFormReport( object ):
-    def __init__( self, framework_ver:str="0.3" ):
+class ShortFormReport(object):
+    def __init__(self, framework_ver: str = "0.3"):
         self.report = {}
         self.report["review_framework_version"] = f"{framework_ver}".strip()
         self.signed_report = None
 
-
-    def add_device( self, vendor:str, product:str, category:str, repo_tag:str, fw_ver:str, fw_hash_sha384:str, fw_hash_sha512:str ) -> None:
+    def add_device(self, vendor: str, product: str, category: str, repo_tag: str, fw_ver: str, fw_hash_sha384: str,
+                   fw_hash_sha512: str) -> None:
         """Add metadata that describes the vendor's device that was tested.
 
         vendor:    The name of the vendor that manufactured the device.
@@ -73,16 +73,15 @@ class ShortFormReport( object ):
         fw_hash_sha512: ... ditto but using SHA2-512 ...
         """
         self.report["device"] = {}
-        self.report["device"]["vendor"]           = f"{vendor}".strip()
-        self.report["device"]["product"]          = f"{product}".strip()
-        self.report["device"]["category"]         = f"{category}".strip()
-        self.report["device"]["repo_tag"]         = f"{repo_tag}".strip()
-        self.report["device"]["fw_version"]       = f"{fw_ver}".strip()
+        self.report["device"]["vendor"] = f"{vendor}".strip()
+        self.report["device"]["product"] = f"{product}".strip()
+        self.report["device"]["category"] = f"{category}".strip()
+        self.report["device"]["repo_tag"] = f"{repo_tag}".strip()
+        self.report["device"]["fw_version"] = f"{fw_ver}".strip()
         self.report["device"]["fw_hash_sha2_384"] = f"{fw_hash_sha384}".strip()
         self.report["device"]["fw_hash_sha2_512"] = f"{fw_hash_sha512}".strip()
 
-
-    def add_audit( self, srp:str, methodology:str, date:str, report_ver:str, cvss_ver:str="3.1" ) -> None:
+    def add_audit(self, srp: str, methodology: str, date: str, report_ver: str, scope_number: int, cvss_ver: str = "3.1") -> None:
         """Add metadata that describes the scope of the security review.
 
         srp:         The name of the Security Review Provider.
@@ -91,19 +90,20 @@ class ShortFormReport( object ):
         date:        The date when the security audit completed. In the 
                        YYYY-MM-DD format.
         report_ver:  Version of the report created by the SRP.
+        scope:       The OCP scope number of the audit, 1, 2, or 3.
         cvss_ver:    Version of CVSS used to calculate scores for each issue.
                        Defaults to "3.1".
         """
         self.report["audit"] = {}
-        self.report["audit"]["srp"]             = f"{srp}".strip()
-        self.report["audit"]["methodology"]     = f"{methodology}".strip()
+        self.report["audit"]["srp"] = f"{srp}".strip()
+        self.report["audit"]["methodology"] = f"{methodology}".strip()
         self.report["audit"]["completion_date"] = f"{date}".strip()
-        self.report["audit"]["report_version"]  = f"{report_ver}".strip()
-        self.report["audit"]["cvss_version"]    = f"{cvss_ver}".strip()
-        self.report["audit"]["issues"]          = []
+        self.report["audit"]["report_version"] = f"{report_ver}".strip()
+        self.report["audit"]["scope_number"] = scope_number
+        self.report["audit"]["cvss_version"] = f"{cvss_ver}".strip()
+        self.report["audit"]["issues"] = []
 
-
-    def add_issue( self, title:str, cvss_score:str, cvss_vec:str, cwe:str, description:str, cve=None ) -> None:
+    def add_issue(self, title: str, cvss_score: str, cvss_vec: str, cwe: str, description: str, cve=None) -> None:
         """Add one issue to the list of issues. This list should only contain
         unfixed issues. That is, any vulnerabilities discovered during the
         audit that were fixed before the 'fw_version' (listed above) should not
@@ -121,44 +121,44 @@ class ShortFormReport( object ):
                        assigned a CVE number.
         """
         new_issue = {
-          "title":       f"{title}".strip(),
-          "cvss_score":  f"{cvss_score}".strip(),
-          "cvss_vector": f"{cvss_vec}".strip(),
-          "cwe":         f"{cwe}".strip(),
-          "description": f"{description}".strip(),
+            "title": f"{title}".strip(),
+            "cvss_score": f"{cvss_score}".strip(),
+            "cvss_vector": f"{cvss_vec}".strip(),
+            "cwe": f"{cwe}".strip(),
+            "description": f"{description}".strip(),
         }
 
-        if cve is None: new_issue["cve"] = None
-        else:           new_issue["cve"] = f"{cve}".strip()
+        if cve is None:
+            new_issue["cve"] = None
+        else:
+            new_issue["cve"] = f"{cve}".strip()
 
-        self.report["audit"]["issues"].append( new_issue )
-
+        self.report["audit"]["issues"].append(new_issue)
 
     ###########################################################################
-    ## APIs for getting and printing the JSON report
+    # APIs for getting and printing the JSON report
     ###########################################################################
 
-    def get_report_as_dict( self ) -> dict:
+    def get_report_as_dict(self) -> dict:
         """Returns the short-form report as a Python dict.
         """
         return self.report
 
-    def get_report_as_str( self ) -> str:
+    def get_report_as_str(self) -> str:
         """Return the short-form report as a formatted and indented string.
         """
-        return json.dumps( self.get_report_as_dict(), indent=4 )
+        return json.dumps(self.get_report_as_dict(), indent=4)
 
-    def print_report( self ) -> None:
+    def print_report(self) -> None:
         """Pretty-prints the short-form report
         """
-        print( self.get_report_as_str() )
-
+        print(self.get_report_as_str())
 
     ###########################################################################
-    ## APIs for signing the report
+    # APIs for signing the report
     ###########################################################################
 
-    def sign_report( self, priv_key:bytes, algo:str, kid:str ) -> bool:
+    def sign_report(self, priv_key: bytes, algo: str, kid: str) -> bool:
         """Sign the JSON object to make a JSON Web Signature. Refer to RFC7515
         for additional details of the JWS specification.
 
@@ -175,21 +175,21 @@ class ShortFormReport( object ):
         """
         # Ensure the signing algorithm is in the allow list
         if algo not in ALLOWED_JWA_ALGOS:
-            print( f"Algorithm '{algo}' not in: {ALLOWED_JWA_ALGOS}" )
+            print(f"Algorithm '{algo}' not in: {ALLOWED_JWA_ALGOS}")
             return False
 
         # Parse the private key to do some simple validation
-        pem = serialization.load_pem_private_key( priv_key, None, backend=default_backend() )
+        pem = serialization.load_pem_private_key(priv_key, None, backend=default_backend())
 
         # Ensure the correct private key types are passed
         if not isinstance(pem, (RSAPrivateKey, EllipticCurvePrivateKey)):
-            print( f"Expected 'priv_key' to be a 'RSAPrivateKey' or 'EllipticCurvePrivateKey'" )
+            print(f"Expected 'priv_key' to be a 'RSAPrivateKey' or 'EllipticCurvePrivateKey'")
             return False
 
         # Sanity check which curve is in use:
         if algo in ALLOWED_JWA_ECDSA_ALGOS:
             if pem.curve.name not in ("secp521r1", "secp384r1"):
-                print( f"Using disallowed curve: {pem.curve.name}" )
+                print(f"Using disallowed curve: {pem.curve.name}")
                 return False
 
         # Because the JWA algorithm (e.g., 'PS384') specifies the hash-size, and
@@ -197,40 +197,38 @@ class ShortFormReport( object ):
         # RSA keys smaller than 3072 bytes.
         if algo in ALLOWED_JWA_RSA_ALGOS:
             if pem.key_size not in ALLOWED_RSA_KEY_SIZES:
-                print( f"RSA key is too small: {pem.key_size}, must be one of: {ALLOWED_RSA_KEY_SIZES}" )
+                print(f"RSA key is too small: {pem.key_size}, must be one of: {ALLOWED_RSA_KEY_SIZES}")
                 return False
 
         # Ensure the provided private key corresponds with the specified algo parameter.
         if ((algo == "PS384") and (pem.key_size != 3072)) or \
-           ((algo == "PS512") and (pem.key_size != 4096)) or \
-           ((algo == "ES384") and (pem.key_size !=  384)) or \
-           ((algo == "ES512") and (pem.key_size !=  521)):
-            print( f"Mismatch between algo={algo} and private key size: {pem.key_size}" )
+                ((algo == "PS512") and (pem.key_size != 4096)) or \
+                ((algo == "ES384") and (pem.key_size != 384)) or \
+                ((algo == "ES512") and (pem.key_size != 521)):
+            print(f"Mismatch between algo={algo} and private key size: {pem.key_size}")
             return False
-        
+
         # Set the JWS headers
-        jws_headers = { "kid": f"{kid}" }
+        jws_headers = {"kid": f"{kid}"}
 
         # Finally, we can sign the short-form report.
-        self.signed_report = jwt.encode( self.get_report_as_dict(), 
-                                         key=priv_key,
-                                         algorithm=algo,
-                                         headers=jws_headers )
+        self.signed_report = jwt.encode(self.get_report_as_dict(),
+                                        key=priv_key,
+                                        algorithm=algo,
+                                        headers=jws_headers)
         return True
 
-
-    def get_signed_report( self ) -> bytes:
+    def get_signed_report(self) -> bytes:
         """Returns the signed short form report (a JWS) as a bytes object. May
         return a 'None' object if the report hasn't been signed yet.
         """
-        return self.signed_report 
-
+        return self.signed_report
 
     ###########################################################################
-    ## APIs for verifying a signed report
+    # APIs for verifying a signed report
     ###########################################################################
 
-    def get_signed_report_kid( self, signed_report:bytes ) -> str:
+    def get_signed_report_kid(self, signed_report: bytes) -> str:
         """Read the unverified JWS header to extract the Key ID. This will be
         used to find the appropriate public key for verifying the report 
         signature.
@@ -240,12 +238,11 @@ class ShortFormReport( object ):
 
         Returns None if the 'kid' isn't present, otherwise return the 'kid' string.
         """
-        header = jwt.get_unverified_header( signed_report )
+        header = jwt.get_unverified_header(signed_report)
         kid = header.get("kid", None)
         return kid
 
-
-    def verify_signed_report( self, signed_report:bytes, pub_key:bytes ) -> dict:
+    def verify_signed_report(self, signed_report: bytes, pub_key: bytes) -> dict:
         """Verify the signed report using the provided public key.
 
         signed_report: A bytes object containing the signed report as a JWS 
@@ -256,9 +253,7 @@ class ShortFormReport( object ):
         Returns a dictionary containing the decoded JSON short-form report 
         payload.
         """
-        decoded = jwt.decode( signed_report, 
-                              pub_key,
-                              algorithms=ALLOWED_JWA_ALGOS )
+        decoded = jwt.decode(signed_report,
+                             pub_key,
+                             algorithms=ALLOWED_JWA_ALGOS)
         return decoded
-
-
